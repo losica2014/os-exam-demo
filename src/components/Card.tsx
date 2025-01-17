@@ -79,6 +79,7 @@ export const Card = memo(function Card({id} : {id: number}): JSX.Element {
                     <p className="italic">Нет задач. Мы не знаем, почему, но это так.</p>
                 )
             }
+            <p className='text-gray-400 text-justify'>Правильность ответа не гарантирована, но предполагается.</p>
             <p className='text-gray-400 text-justify'>Билет может менять содержимое задач при обновлении сервиса. Если хотите точно сохранить его - делайте скриншот.</p>
         </div>
     );

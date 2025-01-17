@@ -1,6 +1,7 @@
 import Prando from "prando";
 import { DynamicQuestionGroup, QuestionGroup } from "./types";
-import { BankerState, generateBankerState, runBanker } from "./tasks/banker";
+import { BankerResult, BankerState, generateBankerState, runBanker } from "./tasks/banker";
+import { BankerTables } from "./components/BankerTable";
 
 const questions: QuestionGroup[] = [
     {
@@ -321,6 +322,7 @@ const tasks: DynamicQuestionGroup[] = [
         title: 'Межпроцессное взаимодействие',
         questions: [
             {
+                id: 1,
                 create: (id: number) => {
                     const rand = new Prando(id);
 
@@ -344,77 +346,102 @@ const tasks: DynamicQuestionGroup[] = [
                     const res = runBanker(newState);
                     const { safe, safeOrder, availableAtTheEnd } = res;
                     const answer = safe
-                        ? `Состояние безопасно.\nНайденный безопасный путь: ${safeOrder.map((v) => `Р${v+1}`).join(" -> ")}. Доступные ресурсы: (${availableAtTheEnd.map((v) => v.toString()).join(",\u00A0")}).`
-                        : `Состояние небезопасно.\n${safeOrder.length > 0 ? `Найденный безопасный путь: ${safeOrder.map((v) => `Р${v+1}`).join(" -> ")}.` : 'Не получилось удовлетворить запросы ни одного процесса.'} Доступные ресурсы: (${availableAtTheEnd.map((v) => v.toString()).join(",\u00A0")}).\nНевозможно предоставить:\n${Object.entries(res.unsafeDemands).map(([s, v]) => `\u16EB процессу P${Number(s) + 1} \u2014 (${v.map((v) => v.toString()).join(",\u00A0")})`).join(",\n")}.`;
+                        ? `Состояние безопасно.\nНайденный безопасный путь: ${safeOrder.map((v) => `Р${v+1}`).join(" \u279D ")}. Доступные ресурсы: (${availableAtTheEnd.map((v) => v.toString()).join(",\u00A0")}).`
+                        : `Состояние небезопасно.\n${safeOrder.length > 0 ? `Найденный безопасный путь: ${safeOrder.map((v) => `Р${v+1}`).join(" \u279D ")}.` : 'Не получилось удовлетворить запросы ни одного процесса.'} Доступные ресурсы: (${availableAtTheEnd.map((v) => v.toString()).join(",\u00A0")}).\nНевозможно предоставить:\n${Object.entries(res.unsafeDemands).map(([s, v]) => `\u16EB процессу P${Number(s) + 1} \u2014 (${v.map((v) => v.toString()).join(",\u00A0")})`).join(",\n")}.`;
                     return {
                         id: id,
                         text: text,
-                        data: (
-                            <div className='flex gap-6'>
-                                <table className='table table-fixed border border-collapse caption-top grow'>
-                                    <caption className="p-2 table-caption">
-                                        Текущее распределение
-                                    </caption>
-                                    <thead>
-                                        <tr>
-                                            <th className="border p-2"></th>
-                                            {
-                                                [...Array(numResources)].map((_, i) => {
-                                                    return <th className="border p-2" key={i}>№{i + 1}</th>
-                                                })
-                                            }
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {allocations.map((allocation, process) => {
-                                            return (
-                                            <tr>
-                                                <td className="border p-2">P{process+1}</td>
-                                                {
-                                                    allocation.map((v, i) => {
-                                                        return <td className="border p-2" key={i}>{v}</td>
-                                                    })
-                                                }
-                                            </tr>
-                                            )
-                                        })}
-                                    </tbody>
-                                </table>
-                                <table className='table table-fixed border border-collapse caption-top grow'>
-                                    <caption className="p-2 table-caption">
-                                        Максимальные требования
-                                    </caption>
-                                    <thead>
-                                        <tr>
-                                            <th className="border p-2"></th>
-                                            {
-                                                [...Array(numResources)].map((_, i) => {
-                                                    return <th className="border p-2">№{i + 1}</th>
-                                                })
-                                            }
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {demands.map((demand, process) => {
-                                            return (
-                                                <tr>
-                                                    <td className="border p-2">P{process+1}</td>
-                                                    {
-                                                        demand.map((v) => {
-                                                            return <td className="border p-2">{v}</td>
-                                                        })
-                                                    }
-                                                </tr>
-                                            )
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ),
+                        data: <BankerTables allocations={allocations} demands={demands} numResources={numResources} />,
                         answer: answer
                     }
                 }
-            }
+            },
+            {
+                id: 2,
+                create: (id: number) => {
+                    const state = generateBankerState(id);
+                    const { allocations, demands, available, numProcesses, numResources } = state;
+
+                    const text = `В системе имеется ${numProcesses} шт. процессов и ${numResources} шт. видов ресурсов, которые можно предоставлять процессам. Текущее распределение ресурсов и максимальное их количество, необходимое процессам, представлено в таблице. Вектор доступных ресурсов A = (${available.map((v) => v.toString()).join(",\u00A0")}). Безопасно ли данное состояние?`;
+
+                    const res = runBanker(state);
+                    const { safe, safeOrder, availableAtTheEnd } = res;
+                    const answer = safe
+                        ? `Состояние безопасно.\nНайденный безопасный путь: ${safeOrder.map((v) => `Р${v+1}`).join(" \u279D ")}. Доступные ресурсы: (${availableAtTheEnd.map((v) => v.toString()).join(",\u00A0")}).`
+                        : `Состояние небезопасно.\n${safeOrder.length > 0 ? `Найденный безопасный путь: ${safeOrder.map((v) => `Р${v+1}`).join(" \u279D ")}.` : 'Не получилось удовлетворить запросы ни одного процесса.'} Доступные ресурсы: (${availableAtTheEnd.map((v) => v.toString()).join(",\u00A0")}).\nНевозможно предоставить:\n${Object.entries(res.unsafeDemands).map(([s, v]) => `\u16EB процессу P${Number(s) + 1} \u2014 (${v.map((v) => v.toString()).join(",\u00A0")})`).join(",\n")}.`;
+                    return {
+                        id: id,
+                        text: text,
+                        data: <BankerTables allocations={allocations} demands={demands} numResources={numResources} />,
+                        answer: answer
+                    }
+                }
+            },
+            {
+                id: 3,
+                create: (id: number) => {
+                    const rand = new Prando(id);
+
+                    const state = generateBankerState(id);
+                    const { allocations, demands, numProcesses, numResources } = state;
+
+                    // const totalUnmetDemands = [];
+                    // for (let i = 0; i < numResources; i++) {
+                    //     totalUnmetDemands.push(unmetDemands.reduce((total, demand) => total + demand[i], 0));
+                    // }
+
+                    const chosenResource = rand.nextInt(0, numResources - 1);
+                    const available: number[] = state.available.slice();
+                    let res: BankerResult;
+                    available[chosenResource] = Number.POSITIVE_INFINITY;
+                    let retryCount = 0;
+                    do {
+                        const newState: BankerState = {
+                            ...state,
+                            available,
+                        };
+
+                        res = runBanker(newState);
+                        if(!res.safe) {
+                            for(let i = 0; i < numProcesses; i++) {
+                                if(i == chosenResource) continue;
+                                available[i] = rand.nextInt(0, 10);
+                            }
+                        }
+                    } while(!res.safe && retryCount++ < 500);
+
+                    if(!res.safe) {
+                        return {
+                            id: id,
+                            text: 'Задание не будет сгенерировано.'
+                        }
+                    }
+
+                    available[chosenResource] = 0;
+                    do {
+                        const newState: BankerState = {
+                            ...state,
+                            available,
+                        };
+
+                        res = runBanker(newState);
+                        if(!res.safe) {
+                            available[chosenResource]++;
+                        }
+                    } while(!res.safe);
+
+                    const text = `В системе имеется ${numProcesses} шт. процессов и ${numResources} шт. видов ресурсов, которые можно предоставлять процессам. Текущее распределение ресурсов и максимальное их количество, необходимое процессам, представлено в таблице. Вектор доступных ресурсов A = (${available.map((v, index) => index == chosenResource ? 'N' : v.toString()).join(",\u00A0")}). При каком минимальном количестве ресурса №${chosenResource+1} состояние будет безопасным?`;
+
+                    const { safeOrder, availableAtTheEnd } = res;
+                    const answer = `Состояние безопасно при минимальном количестве ресурса №${chosenResource+1} = ${available[chosenResource]}.\nНайденный безопасный путь: ${safeOrder.map((v) => `Р${v+1}`).join(" \u279D ")}. Доступные ресурсы: (${availableAtTheEnd.map((v) => v.toString()).join(",\u00A0")}).`;
+                    return {
+                        id: id,
+                        text: text,
+                        data: <BankerTables allocations={allocations} demands={demands} numResources={numResources} />,
+                        answer: answer
+                    }
+                }
+            },
         ]
     },
     {

@@ -37,7 +37,8 @@ class Question {
 }
 
 class DynamicQuestion {
-    constructor({create}: {create: (id: number) => Question}) {
+    constructor({id, create}: {id: number, create: (id: number) => Question}) {
+        this.id = id;
         this.create = create;
     }
     // constructor({createText, createImage}: {createText: (id: number) => string, createImage?: (id: number) => string}) {
@@ -47,6 +48,8 @@ class DynamicQuestion {
 
     // createText: (id: number) => string;
     // createImage?: (id: number) => string;
+
+    id: number;
 
     create: (id: number) => Question; /* {
         return {

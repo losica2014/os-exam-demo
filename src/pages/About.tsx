@@ -3,7 +3,7 @@ import { questions, tasks } from "../db"
 
 export default function About() {
     return (
-        <div className="flex flex-col justify-center container max-w-2xl mx-auto h-screen gap-5">
+        <div className="flex flex-col justify-center container max-w-2xl mx-auto gap-5 min-h-screen p-4">
             <h1 className="text-xl font-medium">Справочная информация</h1>
             <h3 className="font-bold">В базе содержатся:</h3>
             <p>Категорий вопросов: {questions.length} (Всего вопросов: {questions.reduce((a, b) => a + b.questions.length, 0)})</p>
