@@ -1,7 +1,9 @@
 import Prando from 'prando';
 import { memo } from 'react';
-import { Question, questions, tasks } from '../db';
+import { questions, tasks } from '../db';
 import logo from '../assets/logo.svg'
+import { Question } from '../types';
+import { Answer } from './Answer';
 
 export const Card = memo(function Card({id} : {id: number}): JSX.Element {
     const rand = new Prando(id);
@@ -65,9 +67,10 @@ export const Card = memo(function Card({id} : {id: number}): JSX.Element {
             <h3>Задачи</h3>
             {selectedTasks.map((task, index) => {
                 return (
-                    <div className="" key={task.id}>
+                    <div className="flex flex-col gap-2" key={task.id}>
                         <p className='text-justify'>{index + 1}. {task.text}</p>
                         {task.data}
+                        {task.answer && <Answer answer={task.answer} />}
                     </div>
                 )
             })}

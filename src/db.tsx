@@ -1,61 +1,6 @@
 import Prando from "prando";
-
-class QuestionGroup {
-    constructor({id, title, questions} : {id: number, title: string, questions: Question[]}) {
-        this.id = id;
-        this.title = title;
-        this.questions = questions;
-    }
-
-    id: number;
-    title: string;
-    questions: Question[];
-}
-
-class DynamicQuestionGroup {
-    constructor({id, title, questions} : {id: number, title: string, questions: DynamicQuestion[]}) {
-        this.id = id;
-        this.title = title;
-        this.questions = questions;
-    }
-
-    id: number;
-    title: string;
-    questions: DynamicQuestion[];
-}
-
-class Question {
-    constructor({id, text, data}: {id: number, text: string, data?: JSX.Element}) {
-        this.id = id;
-        this.text = text;
-        this.data = data;
-    }
-
-    id: number;
-    text: string;
-    data?: JSX.Element;
-}
-
-class DynamicQuestion {
-    constructor({create}: {create: (id: number) => Question}) {
-        this.create = create;
-    }
-    // constructor({createText, createImage}: {createText: (id: number) => string, createImage?: (id: number) => string}) {
-    //     this.createText = createText;
-    //     this.createImage = createImage;
-    // }
-
-    // createText: (id: number) => string;
-    // createImage?: (id: number) => string;
-
-    create: (id: number) => Question; /* {
-        return {
-            id: id,
-            text: this.createText(id),
-            image: this.createImage ? this.createImage(id) : undefined
-        }
-    } */
-}
+import { DynamicQuestionGroup, QuestionGroup } from "./types";
+import { BankerState, generateBankerState, runBanker } from "./tasks/banker";
 
 const questions: QuestionGroup[] = [
     {
@@ -378,31 +323,29 @@ const tasks: DynamicQuestionGroup[] = [
             {
                 create: (id: number) => {
                     const rand = new Prando(id);
-                    const numProcesses = rand.nextInt(2, 5);
-                    const numResources = rand.nextInt(2, 5);
-                    const available = [];
-                    for (let i = 0; i < numResources; i++) {
-                        available.push(rand.nextInt(0, 10));
-                    }
-                    const allocations: number[][] = [];
-                    const demands: number[][] = [];
+
+                    const state = generateBankerState(id);
+                    const { allocations, unmetDemands, demands, available, numProcesses, numResources } = state;
+
                     const chosenOne = rand.nextInt(0, numProcesses - 1);
-                    for (let i = 0; i < numProcesses; i++) {
-                        const demand = [];
-                        const allocation = [];
-                        let atLeastOneSmaller = false;
-                        for (let j = 0; j < numResources; j++) {
-                            const jDemand = rand.nextInt(0, 10);
-                            if (jDemand < available[j]) atLeastOneSmaller = true;
-                            demand.push(jDemand);
-                            allocation.push(rand.nextInt(0, jDemand - ((j == numResources - 1 && !atLeastOneSmaller) ? 1 : 0)));
-                        }
-                        demands.push(demand);
-                        allocations.push(allocation);
-                    }
-                    const chosenResource = rand.nextInt(0, numResources - 1);
-                    const amount = rand.nextInt(1, Math.min(available[chosenResource], demands[chosenOne][chosenResource]));
-                    const text = `В системе имеется ${numProcesses} шт. процессов и ${numResources} шт. видов ресурсов, которые можно предоставлять процессам. Текущее распределение ресурсов и максимальное их количество, необходимое процессам, представлено в таблице. Вектор доступных ресурсов A = (${available.map((v) => v.toString()).join(",\u00A0")}). Будет ли состояние безопасным, если процессу Р${chosenOne+1} распределить ${amount} шт. экземпляра ресурса №${chosenResource+1}?`
+                    let chosenResource;
+                    do {
+                        chosenResource = rand.nextInt(0, numResources - 1);
+                    } while(unmetDemands[chosenOne][chosenResource] == 0 || available[chosenResource] < 1);
+                    const amount = rand.nextInt(1, Math.min(available[chosenResource], unmetDemands[chosenOne][chosenResource]));
+                    const text = `В системе имеется ${numProcesses} шт. процессов и ${numResources} шт. видов ресурсов, которые можно предоставлять процессам. Текущее распределение ресурсов и максимальное их количество, необходимое процессам, представлено в таблице. Вектор доступных ресурсов A = (${available.map((v) => v.toString()).join(",\u00A0")}). Будет ли состояние безопасным, если процессу Р${chosenOne+1} распределить ${amount} шт. экземпляра ресурса №${chosenResource+1}?`;
+
+                    const newState: BankerState = {
+                        ...state,
+                        allocations: allocations.map((v, i) => i == chosenOne ? [...v.slice(0, chosenResource), v[chosenResource] + amount, ...v.slice(chosenResource + 1)] : v),
+                        available: available.map((v, i) => i == chosenResource ? v - amount : v),
+                    };
+
+                    const res = runBanker(newState);
+                    const { safe, safeOrder, availableAtTheEnd } = res;
+                    const answer = safe
+                        ? `Состояние безопасно.\nНайденный безопасный путь: ${safeOrder.map((v) => `Р${v+1}`).join(" -> ")}. Доступные ресурсы: (${availableAtTheEnd.map((v) => v.toString()).join(",\u00A0")}).`
+                        : `Состояние небезопасно.\n${safeOrder.length > 0 ? `Найденный безопасный путь: ${safeOrder.map((v) => `Р${v+1}`).join(" -> ")}.` : 'Не получилось удовлетворить запросы ни одного процесса.'} Доступные ресурсы: (${availableAtTheEnd.map((v) => v.toString()).join(",\u00A0")}).\nНевозможно предоставить:\n${Object.entries(res.unsafeDemands).map(([s, v]) => `\u16EB процессу P${Number(s) + 1} \u2014 (${v.map((v) => v.toString()).join(",\u00A0")})`).join(",\n")}.`;
                     return {
                         id: id,
                         text: text,
@@ -417,7 +360,7 @@ const tasks: DynamicQuestionGroup[] = [
                                             <th className="border p-2"></th>
                                             {
                                                 [...Array(numResources)].map((_, i) => {
-                                                    return <th className="border p-2">№{i + 1}</th>
+                                                    return <th className="border p-2" key={i}>№{i + 1}</th>
                                                 })
                                             }
                                         </tr>
@@ -428,8 +371,8 @@ const tasks: DynamicQuestionGroup[] = [
                                             <tr>
                                                 <td className="border p-2">P{process+1}</td>
                                                 {
-                                                    allocation.map((v) => {
-                                                        return <td className="border p-2">{v}</td>
+                                                    allocation.map((v, i) => {
+                                                        return <td className="border p-2" key={i}>{v}</td>
                                                     })
                                                 }
                                             </tr>
@@ -467,7 +410,8 @@ const tasks: DynamicQuestionGroup[] = [
                                     </tbody>
                                 </table>
                             </div>
-                        )
+                        ),
+                        answer: answer
                     }
                 }
             }
@@ -482,4 +426,4 @@ const tasks: DynamicQuestionGroup[] = [
     }
 ]
 
-export { QuestionGroup, Question, DynamicQuestionGroup, DynamicQuestion, questions, tasks }
+export { questions, tasks }
