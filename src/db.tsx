@@ -2,6 +2,7 @@ import Prando from "prando";
 import { DynamicQuestionGroup, QuestionGroup } from "./types";
 import { BankerResult, BankerState, generateBankerState, runBanker } from "./tasks/banker";
 import { BankerTables } from "./components/BankerTable";
+import { PagingTable } from "./components/PagingTable";
 
 const questions: QuestionGroup[] = [
     {
@@ -448,7 +449,78 @@ const tasks: DynamicQuestionGroup[] = [
         id: 2,
         title: 'Память',
         questions: [
-            
+            {
+                id: 4,
+                create: (id: number) => {
+                    const rand = new Prando(id);
+                    
+                    const bits = 2**(rand.nextInt(4, 8));
+                    let levels: number[] = [];
+                    let bitsLeft = bits;
+                    for(let i = 0; i < rand.nextInt(bits > 32 ? 4 : 2, 4) - 1; i++) {
+                        const level = i == 0 ? rand.nextInt(bits > 32 ? 8 : bits - 8, bits > 32 ? 32 : bits - 8) : Math.min(rand.nextInt(2, bitsLeft), bitsLeft);
+                        bitsLeft -= level;
+                        levels = [level, ...levels];
+                        if(bitsLeft == 0) {
+                            break;
+                        }
+                    }
+                    if(bitsLeft > 0) {
+                        levels = [bitsLeft, ...levels];
+                    }
+
+                    const text = `Компьютер с ${bits}-х разрядным адресом использует ${levels.length-1}-уровневую таблицу страниц. Виртуальные адреса расщепляются на ${levels.slice(0, -1).map((level, index) => `${level}-разрядное поле ${index+1} уровня таблицы`).join(", ")} страниц и смещение. Чему равен размер страницы и сколько их в адресном пространстве?`;
+
+                    const answer = `Размер страницы: ${2**(levels[levels.length - 1])} = 2^${levels[levels.length - 1]} байт\nКоличество страниц: ${2**(bits - levels[levels.length - 1])} = 2^${bits - levels[levels.length - 1]} страниц`;
+
+                    return {
+                        id: id,
+                        text: text,
+                        answer: answer
+                    }
+                }
+            },
+            {
+                id: 5,
+                create: (id: number) => {
+                    const rand = new Prando(id);
+                    
+                    const pageSizeBits = rand.nextInt(8, 32);
+                    const pageNumBits = rand.nextInt(8, 32);
+                    // const totalBits = pageSizeBits + pageNumBits;
+                    
+                    const offset = rand.nextInt(0, 2**(pageSizeBits) - 1);
+                    const pageNum = rand.nextInt(0, 2**(pageNumBits) - 1);
+
+                    const representation = rand.nextArrayItem([2, 8, 10, 16]);
+
+                    const pageMap: { [key: number]: number } = [];
+                    // const state = generatePagingMemoryLayout
+                    pageMap[pageNum] = rand.nextInt(0, 2**(pageNumBits) - 1);
+
+                    for(let i = 0; i < rand.nextInt(4, 8); i++) {
+                        const page = rand.nextInt(0, 2**(pageNumBits) - 1);
+                        const physicalPage = rand.nextInt(0, 2**(pageNumBits) - 1);
+                        pageMap[page] = physicalPage;
+                    }
+
+                    const correctLogicalAddress = pageNum * 2**(pageSizeBits) + offset;
+                    const correctPhysicalAddress = pageMap[pageNum] * 2**(pageSizeBits) + offset;
+
+                    const requirePhysical = rand.nextBoolean();
+
+                    const text = requirePhysical ? `Пусть в некоторой программе, работающей со страничной организацией памяти, произошло обращение по виртуальному адресу ${correctLogicalAddress.toString(representation)}(${representation}). Преобразуйте этот адрес в физический, учитывая, что размер страницы равен 2^${pageSizeBits} байт. Ниже дана таблица страниц данного процесса.` : `Пусть данные некоторой программы, работающей со страничной организацией памяти, хранятся по физическому адресу ${correctPhysicalAddress.toString(representation)}(${representation}). Преобразуйте этот адрес в виртуальный, учитывая, что размер страницы равен 2^${pageSizeBits} байт. Ниже дана таблица страниц данного процесса.`;
+
+                    const answer = requirePhysical ? `Физический адрес: ${correctPhysicalAddress.toString(representation)}(${representation})` : `Логический адрес: ${correctLogicalAddress.toString(representation)}(${representation})`;
+
+                    return {
+                        id: id,
+                        text: text,
+                        data: <PagingTable table={pageMap} representation={representation} />,
+                        answer: answer
+                    }
+                }
+            }
         ]
     }
 ]

@@ -41,7 +41,7 @@ export const Card = memo(function Card({id} : {id: number}): JSX.Element {
 
         if(!task) continue;
 
-        selectedTasks.push(task.create(rand.nextInt()));
+        selectedTasks.push(task.create(rand.nextInt(1, 10000)));
     }
 
     return (
