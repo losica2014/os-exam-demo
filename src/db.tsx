@@ -2,7 +2,8 @@ import Prando from "prando";
 import { DynamicQuestionGroup, QuestionGroup } from "./types";
 import { BankerResult, BankerState, generateBankerState, runBanker } from "./tasks/banker";
 import { BankerTables } from "./components/BankerTable";
-import { PagingTable } from "./components/PagingTable";
+import { PagingTable, PagingTable2 } from "./components/PagingTable";
+import { SegmentTable } from "./components/SegmentTable";
 
 const questions: QuestionGroup[] = [
     {
@@ -521,7 +522,111 @@ const tasks: DynamicQuestionGroup[] = [
                         answer: answer
                     }
                 }
-            }
+            },
+            {
+                id: 6,
+                create: (id: number) => {
+                    const rand = new Prando(id);
+                    
+                    const pageSizeBits = 12;//rand.nextArrayItem([4096, 2048*1024]);
+                    const pageNumBits = 32-12-2*rand.nextInt(0, 8);//rand.nextInt(8, 32);
+                    // const totalBits = pageSizeBits + pageNumBits;
+                    
+                    const offset = rand.nextInt(0, 2**(pageSizeBits) - 1);
+                    const pageNum = rand.nextInt(0, 2**(pageNumBits) - 1);
+
+                    const representation = rand.nextArrayItem([2, 8, 10, 16]);
+
+                    const pageMap: { [key: number]: { value: string, bit1: boolean, bit2: boolean, bit3: boolean } } = [];
+                    // const state = generatePagingMemoryLayout
+
+                    const pagePresent = rand.nextBoolean();
+
+                    if(pagePresent) {
+                        const present = rand.nextBoolean()
+                        pageMap[pageNum] = {
+                            value: present ? rand.nextInt(0, 2**(pageNumBits) - 1).toString(representation) : '-',
+                            bit1: present,
+                            bit2: rand.nextBoolean(),
+                            bit3: rand.nextBoolean()
+                        }
+                    }
+
+                    for(let i = 0; i < rand.nextInt(4, 8); i++) {
+                        const page = rand.nextInt(0, 2**(pageNumBits) - 1);
+                        const physicalPage = rand.nextInt(0, 2**(pageNumBits) - 1);
+                        const present = rand.nextBoolean();
+                        pageMap[page] = {
+                            value: present ? physicalPage.toString(representation) : '-',
+                            bit1: present,
+                            bit2: rand.nextBoolean(),
+                            bit3: rand.nextBoolean()
+                        };
+                    }
+
+                    const correctLogicalAddress = pageNum * 2**(pageSizeBits) + offset;
+                    const correctPhysicalAddress = pagePresent && Number.parseInt(pageMap[pageNum].value, representation) * 2**(pageSizeBits) + offset;
+
+                    const text = `Предположим, что таблица страниц процесса выглядит следующим образом. Какой физический адрес (если он существует) соответствует виртуальному адресу ${correctLogicalAddress.toString(representation)}(${representation})? Учитывайте, что размер страницы равен 2^${pageSizeBits} байт.`;
+
+                    const answer = pagePresent ? (pageMap[pageNum].bit1 ? `Физический адрес: ${correctPhysicalAddress.toString(representation)}(${representation})` : `Физическая страница не загружена в память или она отсутствует в таблице.`) : `№ логической страницы отсутствует в таблице.`;
+
+                    return {
+                        id: id,
+                        text: text,
+                        data: <PagingTable2 table={pageMap} representation={representation} />,
+                        answer: answer
+                    }
+                }
+            },
+            {
+                id: 7,
+                create: (id: number) => {
+                    const rand = new Prando(id);
+                    
+                    const totalBits = 2**rand.nextInt(5, 7);
+                    const segmentOffsetBits = Math.ceil(rand.nextInt(totalBits/8, Math.min(totalBits/2, 16)) / 4) * 4;
+                    const segmentNumBits = totalBits - segmentOffsetBits;
+
+                    const representation = 16;//rand.nextArrayItem([2, 8, 10, 16]);
+
+                    const segmentMap: { [key: number]: { size: number, start: number } } = [];
+
+                    // segmentMap[segmentNum] = rand.nextInt(0, 2**(segmentNumBits) - 1);
+                    const segmentCount = rand.nextInt(4, 8);
+                    const availableSegmentNums = Array.from(Array(segmentCount).keys());
+
+                    const startOffset = rand.nextInt(0, 1023);
+                    for(let i = 0; i < segmentCount; i++) {
+                        const segmentStart = (i + startOffset) * 2**(segmentOffsetBits);
+                        const segmentSizeOffset = Math.max(segmentOffsetBits - rand.nextInt(2, 4), 0)
+                        const segmentSize = rand.nextInt(1, 2**(segmentOffsetBits - segmentSizeOffset)) * 2**(segmentSizeOffset);
+                        const segmentNum = availableSegmentNums.splice(rand.nextInt(0, availableSegmentNums.length - 1), 1)[0];
+                        segmentMap[segmentNum] = { size: segmentSize, start: segmentStart };
+                    }
+                    
+                    const offset = rand.nextInt(0, 2**(segmentOffsetBits) - 1);
+                    const segmentNum = rand.nextInt(0, segmentCount - 1);
+                    const segmentStart = segmentMap[segmentNum].start;
+                    const segmentSize = segmentMap[segmentNum].size;
+
+                    const correctLogicalAddress = segmentNum * 2**(segmentOffsetBits) + offset;
+                    const correctPhysicalAddress = segmentStart + offset;
+
+                    const physicalOutOfBounds = offset > segmentSize;
+
+                    const text = `Пусть в некоторой программе, работающей с сегментной организацией памяти, произошло обращение по адресу ${correctLogicalAddress.toString(representation)}(${representation}). Преобразуйте этот адрес в физический, учитывая, что на номер сегмента отводятся старшие ${segmentNumBits} бит адреса. Ниже дана таблица сегментов данного процесса.`;
+
+                    const answer = physicalOutOfBounds ? `Адрес выходит за пределы сегмента. Адрес ошибочен.` : `Физический адрес: ${correctPhysicalAddress.toString(representation)}(${representation})`;
+
+                    return {
+                        id: id,
+                        text: text,
+                        data: <SegmentTable table={segmentMap} representation={representation} />,
+                        answer: answer
+                    }
+                }
+            },
         ]
     }
 ]
