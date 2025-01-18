@@ -4,6 +4,7 @@ import { questions, tasks } from '../db';
 import logo from '../assets/logo.svg'
 import { Question } from '../types';
 import { Answer } from './Answer';
+import { Link } from 'react-router';
 
 export const Card = memo(function Card({id} : {id: number}): JSX.Element {
     const rand = new Prando(id);
@@ -29,6 +30,7 @@ export const Card = memo(function Card({id} : {id: number}): JSX.Element {
     }
 
     const selectedTasks: Question[] = [];
+    const selectedTaskIds: number[][] = [];
     const usedTaskCategories: number[] = [];
     for(let i = 0; i < numTasks; i++) {
         let taskCategory = rand.nextInt(0, tasks.length - 1);
@@ -41,7 +43,11 @@ export const Card = memo(function Card({id} : {id: number}): JSX.Element {
 
         if(!task) continue;
 
-        selectedTasks.push(task.create(rand.nextInt(1, 10000)));
+        const taskCategoryId = tasks[taskCategory].id;
+        const taskId = task.id;
+        const taskSeed = rand.nextInt(1, 10000);
+        selectedTasks.push(task.create(taskSeed));
+        selectedTaskIds.push([taskCategoryId, taskId, taskSeed]);
     }
 
     return (
@@ -68,6 +74,7 @@ export const Card = memo(function Card({id} : {id: number}): JSX.Element {
             {selectedTasks.map((task, index) => {
                 return (
                     <div className="flex flex-col gap-2" key={task.id}>
+                        <Link className="text-gray-400 hover:text-gray-700" to={`/task?categoryId=${selectedTaskIds[index][0]}&taskId=${selectedTaskIds[index][1]}&seed=${selectedTaskIds[index][2]}`}>Ссылка на задачу {selectedTaskIds[index][0]}:{selectedTaskIds[index][1]}#{selectedTaskIds[index][2]}</Link>
                         <p className='text-justify'>{index + 1}. {task.text}</p>
                         {task.data}
                         {task.answer && <Answer answer={task.answer} />}

@@ -341,6 +341,7 @@ const tasks: DynamicQuestionGroup[] = [
                     const newState: BankerState = {
                         ...state,
                         allocations: allocations.map((v, i) => i == chosenOne ? [...v.slice(0, chosenResource), v[chosenResource] + amount, ...v.slice(chosenResource + 1)] : v),
+                        unmetDemands: unmetDemands.map((v, i) => i == chosenOne ? [...v.slice(0, chosenResource), v[chosenResource] - amount, ...v.slice(chosenResource + 1)] : v),
                         available: available.map((v, i) => i == chosenResource ? v - amount : v),
                     };
 
