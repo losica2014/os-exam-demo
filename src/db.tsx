@@ -615,7 +615,7 @@ const tasks: DynamicQuestionGroup[] = [
 
                     const physicalOutOfBounds = offset > segmentSize;
 
-                    const text = `Пусть в некоторой программе, работающей с сегментной организацией памяти, произошло обращение по адресу ${correctLogicalAddress.toString(representation)}(${representation}). Преобразуйте этот адрес в физический, учитывая, что на номер сегмента отводятся старшие ${segmentNumBits} бит адреса. Ниже дана таблица сегментов данного процесса.`;
+                    const text = `Пусть в некоторой программе, работающей с сегментной организацией памяти, произошло обращение по адресу ${correctLogicalAddress.toString(representation)}(${representation}). Преобразуйте этот адрес в физический, учитывая, что на номер сегмента отводятся старшие ${segmentNumBits} бит адреса (длина адреса равна ${totalBits} бит). Ниже дана таблица сегментов данного процесса.`;
 
                     const answer = physicalOutOfBounds ? `Адрес выходит за пределы сегмента. Адрес ошибочен.` : `Физический адрес: ${correctPhysicalAddress.toString(representation)}(${representation})`;
 
