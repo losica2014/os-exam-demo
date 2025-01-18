@@ -627,6 +627,75 @@ const tasks: DynamicQuestionGroup[] = [
                     }
                 }
             },
+            {
+                id: 8,
+                create: (id: number) => {
+                    const rand = new Prando(id);
+
+                    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                    
+                    const numPages = rand.nextInt(8, 16);
+                    const pageOffset = rand.nextInt(0, alphabet.length - numPages);
+
+                    const pageLoadTimes: number[] = [];
+                    const pageReads = [];
+
+                    const algorithms = ['FIFO', 'Второй шанс', 'Часы'];
+                    const algorithm = rand.nextInt(0, algorithms.length - 1);
+
+                    for(let i = 0; i < numPages; i++) {
+                        const lastPageLoadTime = pageLoadTimes.length > 0 ? pageLoadTimes[pageLoadTimes.length - 1] : 0;
+                        pageLoadTimes.push(rand.nextInt(1, 5) + lastPageLoadTime);
+                        pageReads.push(rand.nextBoolean());
+                    }
+
+                    const clockHandle = rand.nextInt(0, numPages - 1);
+
+                    let chosenPage: number;
+                    if(algorithm == 0) {
+                        // FIFO
+                        chosenPage = 0;
+                    } else if(algorithm == 1) {
+                        // Second chance
+                        const pageReads2 = pageReads.slice();
+                        let current = 0;
+                        while(true) {
+                            if(!pageReads2[current]) {
+                                chosenPage = current;
+                                break;
+                            } else {
+                                pageReads2[current] = false;
+                                current = (current + 1) % numPages;
+                            }
+                        }
+                    } else if(algorithm == 2) {
+                        // Clock
+                        const pageReads2 = pageReads.slice();
+                        let current = clockHandle;
+                        while(true) {
+                            if(!pageReads2[current]) {
+                                chosenPage = current;
+                                break;
+                            } else {
+                                pageReads2[current] = false;
+                                current = (current + 1) % numPages;
+                            }
+                        }
+                    } else {
+                        chosenPage = -1;
+                    }
+
+                    const text = `Рассмотрим последовательность страниц (в скобках - время добавления в память): ${Array(...alphabet.slice(pageOffset, pageOffset + numPages)).map((v, i) => `${v}(${pageLoadTimes[i]})`).join('-')}. Предположим, что биты R для страниц следующие: ${pageReads.map((v) => v ? '1' : '0').join('')}. Какая страница будет выбрана для удаления алгоритмом "${algorithms[algorithm]}"? ${algorithm == 2 ? `Стрелка часов в данный момент указывает на страницу ${alphabet[clockHandle + pageOffset]}.` : ''}`;
+
+                    const answer = alphabet[chosenPage + pageOffset];
+
+                    return {
+                        id: id,
+                        text: text,
+                        answer: answer
+                    }
+                }
+            }
         ]
     }
 ]
