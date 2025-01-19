@@ -14,7 +14,7 @@ export function SegmentTable({table, representation} : {table: { [key: number]: 
             <tbody className="font-mono text-right">
                 {Object.entries(table).map(([key, value]) => {
                     return (
-                        <tr>
+                        <tr key={key}>
                             <td className="border p-2">{Number.parseInt(key).toString(representation)}</td>
                             <td className="border p-2">{value.start.toString(representation)}</td>
                             <td className="border p-2">{value.size.toString(representation)}</td>

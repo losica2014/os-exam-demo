@@ -1,10 +1,9 @@
-import { memo } from 'react';
 import { tasks } from '../db';
 import logo from '../assets/logo.svg'
 import { Question } from '../types';
 import { Answer } from './Answer';
 
-export const TaskCard = memo(function TaskCard({categoryId, taskId, seed} : {categoryId: number, taskId: number, seed: number}): JSX.Element {
+export function TaskCard({categoryId, taskId, seed} : {categoryId: number, taskId: number, seed: number}): JSX.Element {
     // const rand = new Prando(id);
 
     const selectedTasks: Question[] = [];
@@ -37,4 +36,4 @@ export const TaskCard = memo(function TaskCard({categoryId, taskId, seed} : {cat
             <p className='text-gray-400 text-justify'>Билет может менять содержимое задач при обновлении сервиса. Если хотите точно сохранить его - делайте скриншот.</p>
         </div>
     );
-})
+}

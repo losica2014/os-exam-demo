@@ -18,7 +18,7 @@ export function BankerTables({demands, allocations, numResources}: {demands: num
                 <tbody>
                     {allocations.map((allocation, process) => {
                         return (
-                        <tr>
+                        <tr key={process}>
                             <td className="border p-2">P{process+1}</td>
                             {
                                 allocation.map((v, i) => {
@@ -39,7 +39,7 @@ export function BankerTables({demands, allocations, numResources}: {demands: num
                         <th className="border p-2"></th>
                         {
                             [...Array(numResources)].map((_, i) => {
-                                return <th className="border p-2">№{i + 1}</th>
+                                return <th className="border p-2" key={i}>№{i + 1}</th>
                             })
                         }
                     </tr>
@@ -47,11 +47,11 @@ export function BankerTables({demands, allocations, numResources}: {demands: num
                 <tbody>
                     {demands.map((demand, process) => {
                         return (
-                            <tr>
+                            <tr key={process}>
                                 <td className="border p-2">P{process+1}</td>
                                 {
-                                    demand.map((v) => {
-                                        return <td className="border p-2">{v}</td>
+                                    demand.map((v, i) => {
+                                        return <td className="border p-2" key={i}>{v}</td>
                                     })
                                 }
                             </tr>

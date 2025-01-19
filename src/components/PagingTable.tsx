@@ -13,7 +13,7 @@ export function PagingTable({table, representation} : {table: { [key: number]: n
             <tbody className="font-mono text-right">
                 {Object.entries(table).map(([key, value]) => {
                     return (
-                        <tr>
+                        <tr key={key}>
                             <td className="border p-2">{Number.parseInt(key).toString(representation)}</td>
                             <td className="border p-2">{value.toString(representation)}</td>
                         </tr>
@@ -41,7 +41,7 @@ export function PagingTable2({table, representation} : {table: { [key: number]: 
             <tbody className="font-mono text-right">
                 {Object.entries(table).map(([key, value]) => {
                     return (
-                        <tr>
+                        <tr key={key}>
                             <td className="border p-2">{Number.parseInt(key).toString(representation)}</td>
                             <td className="border p-2">{value.bit1.toString()}</td>
                             <td className="border p-2">{(value.bit1 && value.bit2).toString()}</td>
